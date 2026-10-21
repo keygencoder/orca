@@ -9,7 +9,8 @@ import {
 import { RetainedPaneHost } from '../tab-group/RetainedPaneHost'
 import NativeChatView from './NativeChatView'
 import { isStructuredTab } from '../../../../shared/structured-agent-session-tab'
-import { resolvePaneStyleOptions } from '@/lib/terminal-theme'
+import { cn } from '@/lib/utils'
+import { UNFOCUSED_SPLIT_GROUP_DIM_CLASS } from '../tab-group/split-group-dim'
 
 type StructuredAgentSessionTab = Tab & {
   contentType: 'agent-session'
@@ -38,8 +39,6 @@ const StructuredAgentSessionOverlaySlot = memo(function StructuredAgentSessionOv
   // hosts can share.
   const owner = useAppStore((state) => structuredAgentSessionOwnerForTab(state, tab))
   const target = useMemo(() => structuredAgentSessionTargetForHost(owner), [owner])
-  const settings = useAppStore((state) => state.settings)
-  const paneStyle = settings ? resolvePaneStyleOptions(settings) : undefined
   if (!target) {
     return null
   }
@@ -50,18 +49,12 @@ const StructuredAgentSessionOverlaySlot = memo(function StructuredAgentSessionOv
       data-structured-agent-session-overlay-tab-id={tab.id}
       onFocusOwningGroup={onFocusOwningGroup}
     >
+      {/* The chat layer sits outside its group's DOM, so it takes the group's dim itself. */}
       <div
-        className="flex min-h-0 min-w-0 flex-1"
-        style={{
-          opacity: hasSplitGroups
-            ? isFocusedGroup
-              ? paneStyle?.activePaneOpacity
-              : paneStyle?.inactivePaneOpacity
-            : undefined,
-          transition: paneStyle?.opacityTransitionMs
-            ? `opacity ${paneStyle.opacityTransitionMs}ms ease`
-            : undefined
-        }}
+        className={cn(
+          'flex min-h-0 min-w-0 flex-1',
+          hasSplitGroups && !isFocusedGroup && UNFOCUSED_SPLIT_GROUP_DIM_CLASS
+        )}
       >
         <NativeChatView
           mode="structured"

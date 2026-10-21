@@ -20,6 +20,7 @@ import { useClientHostedBrowserRows } from '@/lib/pane-manager/client-hosted-bro
 import { resolveClientHostedBrowserRowStripGroupId } from '../tab-bar/client-hosted-browser-row-strip-placement'
 import { useEditorGroupFileDropOwner } from '../editor/use-editor-group-file-drop-owner'
 import { cn } from '@/lib/utils'
+import { UNFOCUSED_SPLIT_GROUP_DIM_CLASS } from './split-group-dim'
 
 const EditorPanel = lazy(() => import('../editor/EditorPanel'))
 const EMPTY_GROUPS: readonly TabGroup[] = []
@@ -259,7 +260,7 @@ export default function TabGroupPanel({
               touchesBottomEdge || suppressBottomBorder ? '' : 'border-b'
             } border-border ${
               isFocused && !touchesBottomEdge && !suppressBottomBorder ? 'border-b-accent' : ''
-            } ${isFocused ? '' : 'opacity-95'}`
+            } ${isFocused ? '' : UNFOCUSED_SPLIT_GROUP_DIM_CLASS}`
           : ''
       }`}
       onPointerDown={commands.focusGroup}
