@@ -11,7 +11,7 @@ type NextPromptsRootProps = ComponentPropsWithRef<'div'> & {
   online: boolean
   controller: Pick<
     ReturnType<typeof useStructuredAgentSession>,
-    'status' | 'messages' | 'prompts' | 'queuedMessages'
+    'status' | 'messages' | 'prompts' | 'queuedMessages' | 'journalItems' | 'latestTurn'
   >
 }
 
@@ -28,7 +28,11 @@ export function NativeChatNextPromptsRoot({
     controller.status === 'ready' &&
     controller.prompts.length === 0 &&
     controller.queuedMessages.cards.length === 0
-      ? latestNativeChatNextPrompts(controller.messages)
+      ? latestNativeChatNextPrompts(
+          controller.messages,
+          controller.journalItems,
+          controller.latestTurn
+        )
       : []
   return (
     <NativeChatNextPromptsEnabledContext value={enabled}>

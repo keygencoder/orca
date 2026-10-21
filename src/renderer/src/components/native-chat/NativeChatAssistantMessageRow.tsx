@@ -54,11 +54,7 @@ export function NativeChatAssistantMessageRow({
   // A thought heading a run reads inside it, so the row has no words of its own.
   const nextPromptsEnabled = useContext(NativeChatNextPromptsEnabledContext)
   const answer =
-    nextPromptsEnabled &&
-    message.role === 'assistant' &&
-    !message.agentId &&
-    !message.shortened &&
-    message.state === 'completed'
+    nextPromptsEnabled && message.role === 'assistant' && !message.agentId && !message.shortened
       ? parseNativeChatNextPrompts(markdown).text
       : markdown
   const words = message.role === 'reasoning' ? '' : answer

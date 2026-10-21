@@ -1,3 +1,6 @@
+import type { AgentJournalRenderItem } from './agent-session-journal-types'
+import type { AgentSessionLatestTurn } from './agent-session-wire'
+import { isRootAgentJournalItem } from './agent-session-journal-producer'
 import type { NativeChatMessage } from './native-chat-types'
 
 export const NEXT_PROMPTS_FENCE = 'orca-next-prompts'
@@ -63,16 +66,33 @@ export function parseNativeChatNextPrompts(text: string): NativeChatNextPrompts 
   return { text, prompts: [] }
 }
 
-export function latestNativeChatNextPrompts(messages: readonly NativeChatMessage[]): string[] {
+export function latestNativeChatNextPrompts(
+  messages: readonly NativeChatMessage[],
+  items: readonly AgentJournalRenderItem[],
+  latestTurn: AgentSessionLatestTurn | null | undefined
+): string[] {
   // 只采用最新主会话消息；后来的用户输入、错误或工具消息都会使旧建议失效。
   const latest = messages.at(-1)
   if (
     !latest ||
     latest.role !== 'assistant' ||
-    latest.agentId ||
+    !isRootAgentJournalItem(latest) ||
     latest.shortened ||
-    latest.state !== 'completed' ||
+    latest.state === 'running' ||
     latest.queued
+  ) {
+    return []
+  }
+  // Codex 助手行没有单独生命周期，以所属轮次的明确成功记录为准。
+  const item = items.find((candidate) => candidate.itemId === latest.id)
+  if (
+    !latestTurn ||
+    latestTurn.turn.state !== 'completed' ||
+    latestTurn.turn.outcome !== 'success' ||
+    !item ||
+    !isRootAgentJournalItem(item) ||
+    item.turnScope?.kind !== 'turn' ||
+    item.turnScope.turnItemId !== latestTurn.itemId
   ) {
     return []
   }
