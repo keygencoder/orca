@@ -9,8 +9,6 @@ import {
 import { RetainedPaneHost } from '../tab-group/RetainedPaneHost'
 import NativeChatView from './NativeChatView'
 import { isStructuredTab } from '../../../../shared/structured-agent-session-tab'
-import { cn } from '@/lib/utils'
-import { UNFOCUSED_SPLIT_GROUP_DIM_CLASS } from '../tab-group/split-group-dim'
 
 type StructuredAgentSessionTab = Tab & {
   contentType: 'agent-session'
@@ -46,27 +44,20 @@ const StructuredAgentSessionOverlaySlot = memo(function StructuredAgentSessionOv
     <RetainedPaneHost
       groupId={groupId}
       isVisible={isActive}
+      dimmed={hasSplitGroups && !isFocusedGroup}
       data-structured-agent-session-overlay-tab-id={tab.id}
       onFocusOwningGroup={onFocusOwningGroup}
     >
-      {/* The chat layer sits outside its group's DOM, so it takes the group's dim itself. */}
-      <div
-        className={cn(
-          'flex min-h-0 min-w-0 flex-1',
-          hasSplitGroups && !isFocusedGroup && UNFOCUSED_SPLIT_GROUP_DIM_CLASS
-        )}
-      >
-        <NativeChatView
-          mode="structured"
-          tabId={tab.id}
-          groupId={groupId}
-          sessionId={tab.entityId}
-          agent={tab.agentSessionAgent}
-          isVisible={isActive}
-          isFocusedGroup={isFocusedGroup}
-          target={target}
-        />
-      </div>
+      <NativeChatView
+        mode="structured"
+        tabId={tab.id}
+        groupId={groupId}
+        sessionId={tab.entityId}
+        agent={tab.agentSessionAgent}
+        isVisible={isActive}
+        isFocusedGroup={isFocusedGroup}
+        target={target}
+      />
     </RetainedPaneHost>
   )
 })
