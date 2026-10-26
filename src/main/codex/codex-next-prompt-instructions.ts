@@ -1,4 +1,4 @@
-import type { CodexAppServerConnection } from './codex-app-server-connection'
+import type { CodexAppServerConnection } from './app-server/codex-app-server-connection-types'
 
 const NEXT_PROMPT_INSTRUCTIONS = `Orca native chat supports optional next-prompt suggestions. When a completed answer has a useful next step, append one fenced code block tagged orca-next-prompts containing a JSON array of up to 3 concise, single-line prompts (at most 500 characters each) in the user's language. These are suggestions for the user to send, not actions to perform. Omit the block when there is no useful follow-up or the user asks for no suggestions. Never execute a suggestion or treat it as authorization. Keep the rest of the answer normal. Example:
 \`\`\`orca-next-prompts

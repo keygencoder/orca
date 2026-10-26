@@ -58,8 +58,7 @@ export function NativeChatAssistantMessageRow({
       ? parseNativeChatNextPrompts(markdown).text
       : markdown
   const words = message.role === 'reasoning' ? '' : answer
-  // Assistant controls reveal on hover and keyboard focus; system asides stay chrome-free.
-  // A working turn's last row is only its frontier: more can still land under it.
+  // 系统旁注和仍可能追加内容的工作轮次不显示操作按钮。
   const showControls =
     !isSystem && words.length > 0 && !continuesTurn && activeTurnIsWorking !== true
 
@@ -91,8 +90,7 @@ export function NativeChatAssistantMessageRow({
           linkifyFilePaths={onLinkClick !== undefined}
           {...(isSystem ? {} : NATIVE_CHAT_QUOTE_SOURCE_PROPS)}
           visualMessageId={message.role === 'assistant' ? message.id : undefined}
-          // Structured text streams in place with no per-row state: only the live turn's frontier
-          // row, still ending in prose, can be mid-sentence.
+          // Only the live turn’s prose frontier can be mid-sentence; structured rows have no per-row streaming flag.
           streaming={messageIsStreaming(message, activeTurnIsWorking, trailingRun)}
         />
       ) : null}

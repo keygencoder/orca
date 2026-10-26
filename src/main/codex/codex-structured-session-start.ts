@@ -6,8 +6,8 @@ import type {
   StructuredAgentSessionProviderOpenInput,
   StructuredAgentSessionProviderOpenResult
 } from '../native-chat/agent-session-wire/structured-agent-session-provider-open-contract'
-import { initializeCodexAppServerConnection } from './codex-app-server-handshake'
-import type { CodexAppServerConnection } from './codex-app-server-connection'
+import { initializeCodexAppServerConnection } from './app-server/codex-app-server-handshake'
+import type { CodexAppServerConnection } from './app-server/codex-app-server-connection-types'
 import { CodexBackgroundTaskTracker, codexChildWorkSink } from './codex-background-task-tracker'
 import type { CodexSubagentExecutions } from './codex-subagent-executions'
 import type { CodexDispatchEchoes } from './codex-structured-dispatch-echo'
@@ -15,13 +15,13 @@ import type { CodexJournalTranslator } from './codex-structured-journal-translat
 import { codexProviderHandleLink } from './codex-structured-owner-identity'
 import { codexNextPromptConfig } from './codex-next-prompt-instructions'
 import { openCodexThread } from './codex-structured-thread-open'
+import { catchUpCodexThread } from './codex-structured-thread-catch-up'
 import { withCodexVisualsThreadConfig } from './codex-structured-visuals'
 import { NATIVE_CHAT_SCRATCH_DIR_ENV } from '../native-chat/native-chat-visuals-delivery'
 import {
   restoredCodexSessionOptions,
   reportedCodexSessionOptions
 } from './codex-structured-session-options'
-import { startBackgroundCodexCatalogRefresh } from './codex-structured-background-catalog'
 import { CodexSkillReport } from './codex-structured-skill-report'
 import { codexAcquireCatalogAccess } from './codex-structured-acquire-catalog'
 import { reportedCodexThreadOptions } from './codex-structured-service-tier'
@@ -111,8 +111,7 @@ export async function openCodexStructuredSession(
         threadConfig: { ...threadLaunch.threadConfig, ...nextPromptConfig },
         commandEnv
       },
-      // No deadline of its own: resuming a long rollout or starting MCP servers takes what it
-      // takes. The host's start ceiling, a close and a Stop end the wait through the signal.
+      // 未指定超时时，长会话恢复和 MCP 启动沿用宿主时限及取消信号。
       deps.requestTimeoutMs ?? null,
       openInput.signal
     ),
@@ -126,7 +125,29 @@ export async function openCodexStructuredSession(
       'Codex thread history exceeds the bounded restore queue; history was not partially imported.'
     )
   }
-  const catalogAccess = codexAcquireCatalogAccess(deps, launch)
+  if (
+    translator &&
+    input.events &&
+    launch.resumeThreadId !== null &&
+    !opened.supersededThreadId &&
+    !threadReturnedTurns(opened.thread)
+  ) {
+    await waitForPromiseWithSignal(
+      catchUpCodexThread({
+        connection,
+        threadId: opened.threadId,
+        sessionId,
+        sink: input.events,
+        signal: openInput.signal,
+        assertCurrent: current,
+        ...(deps.requestTimeoutMs !== undefined ? { timeoutMs: deps.requestTimeoutMs } : {}),
+        ...(deps.logger ? { logger: deps.logger } : {})
+      }),
+      openInput.signal
+    )
+    current()
+  }
+  const catalogAccess = codexAcquireCatalogAccess(deps, launch, sessionId)
   const session: CodexSession = {
     events: input.events,
     account: start.account,
@@ -171,13 +192,6 @@ export async function openCodexStructuredSession(
     ...(deps.logger ? { logger: deps.logger } : {})
   })
   session.skillReport.refresh()
-  startBackgroundCodexCatalogRefresh({
-    session,
-    sessionId,
-    sessions,
-    timeoutMs: deps.requestTimeoutMs,
-    logger: deps.logger
-  })
   return {
     link: codexProviderHandleLink({
       threadId: opened.threadId,
@@ -190,4 +204,9 @@ export async function openCodexStructuredSession(
     }),
     reportedOptions: reportedCodexSessionOptions(session)
   }
+}
+
+/** Older Codex versions return history inline, already handled by restoreThread. */
+function threadReturnedTurns(thread: Record<string, unknown> | undefined): boolean {
+  return Array.isArray(thread?.turns) && thread.turns.length > 0
 }

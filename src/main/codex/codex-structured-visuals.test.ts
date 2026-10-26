@@ -3,7 +3,7 @@ import {
   NATIVE_CHAT_SCRATCH_DIR_ENV,
   type NativeChatVisualsLaunch
 } from '../native-chat/native-chat-visuals-delivery'
-import { CodexAppServerRequestError } from './codex-app-server-request-error'
+import { CodexAppServerRequestError } from './app-server/codex-app-server-request-error'
 import { CodexAppServerTimeoutError } from './codex-app-server-session'
 import {
   adapterFor,
@@ -161,7 +161,6 @@ describe('setting up a Codex app-server for a chat with visuals', () => {
   })
 })
 
-/** A chat acquired through the launch its registration composes, over a shell env of `env`. */
 async function acquired(
   codex: ReturnType<typeof fakeCodex>,
   launch: {
@@ -233,7 +232,6 @@ describe('a Codex chat acquisition with visuals', () => {
     // 建议初始化只读取配置，不注册额外的 skill 根目录。
     expect(methods.slice(0, 3)).toEqual(['initialize', 'config/read', 'thread/start'])
     expect(methods).not.toContain('skills/extraRoots/set')
-    // Only the chat's identity overrides: no visuals root, and no inherited folder handed on.
     const config = connection.calls.find((call) => call.method === 'thread/start')?.params?.config
     const scratchDirOverride = `shell_environment_policy.set.${NATIVE_CHAT_SCRATCH_DIR_ENV}`
     expect(config).not.toHaveProperty(['sandbox_workspace_write.writable_roots'])
