@@ -96,7 +96,7 @@ test('Codex next prompts fill the real editor without sending', async ({
   await expect(editor).toHaveText(PROMPT)
   await expect(editor).toBeFocused()
   await expect(suggestion).toHaveCount(0)
-  // 等待超过延迟发送窗口，确认点击没有排队提交。
+  // ast-grep-ignore: test-no-real-time-wait -- 保留延迟观察窗口，验证点击不会自动排队提交第三轮消息。
   await page.waitForTimeout(800)
   expect(turnCount()).toBe(2)
   expect(
