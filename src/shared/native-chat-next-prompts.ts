@@ -9,7 +9,10 @@ const MAX_SUGGESTIONS = 3
 
 export type NativeChatNextPrompts = { text: string; prompts: string[] }
 
-export function parseNativeChatNextPrompts(text: string): NativeChatNextPrompts {
+export function parseNativeChatNextPrompts(
+  text: string,
+  options: { hideOpenTrailingBlock?: boolean } = {}
+): NativeChatNextPrompts {
   // 只识别回复末尾独立的完整区块，不把嵌套代码示例变成操作建议。
   const lines = text.split('\n')
   let fence: string | null = null
@@ -62,6 +65,10 @@ export function parseNativeChatNextPrompts(text: string): NativeChatNextPrompts 
         break
       }
     }
+  }
+  // 仅在生成期间隐藏未闭合的协议块，中断后仍可检查原文。
+  if (options.hideOpenTrailingBlock && fence !== null && start >= 0) {
+    return { text: lines.slice(0, start).join('\n').trimEnd(), prompts: [] }
   }
   return { text, prompts: [] }
 }

@@ -53,9 +53,10 @@ export function NativeChatAssistantMessageRow({
   const isSystem = message.role === 'system'
   // A thought heading a run reads inside it, so the row has no words of its own.
   const nextPromptsEnabled = useContext(NativeChatNextPromptsEnabledContext)
+  const streaming = messageIsStreaming(message, activeTurnIsWorking, trailingRun)
   const answer =
     nextPromptsEnabled && message.role === 'assistant' && !message.agentId && !message.shortened
-      ? parseNativeChatNextPrompts(markdown).text
+      ? parseNativeChatNextPrompts(markdown, { hideOpenTrailingBlock: streaming }).text
       : markdown
   const words = message.role === 'reasoning' ? '' : answer
   // 系统旁注和仍可能追加内容的工作轮次不显示操作按钮。
@@ -91,7 +92,7 @@ export function NativeChatAssistantMessageRow({
           {...(isSystem ? {} : NATIVE_CHAT_QUOTE_SOURCE_PROPS)}
           visualMessageId={message.role === 'assistant' ? message.id : undefined}
           // Only the live turn’s prose frontier can be mid-sentence; structured rows have no per-row streaming flag.
-          streaming={messageIsStreaming(message, activeTurnIsWorking, trailingRun)}
+          streaming={streaming}
         />
       ) : null}
       {toolRun ? <NativeChatToolRun {...toolRun} /> : null}

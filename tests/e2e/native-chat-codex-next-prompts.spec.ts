@@ -83,6 +83,13 @@ test('Codex next prompts fill the real editor without sending', async ({
     await expect(root.getByText('The read-only review is complete.', { exact: true })).toHaveCount(
       turnCount()
     )
+    if (turnCount() === 2) {
+      await expect(root).toHaveAttribute('data-native-chat-working', 'true')
+      await expect(root.getByText('orca-next-prompts', { exact: false })).toHaveCount(0)
+      await expect(root.getByText(PROMPT, { exact: false })).toHaveCount(0)
+      await root.screenshot({ path: testInfo.outputPath('04-streaming-hidden.png') })
+      writeFileSync(`${log}.continue`, 'complete')
+    }
     await expect(root).toHaveAttribute('data-native-chat-working', 'false', { timeout: 30_000 })
     if (turnCount() === 1) {
       await root.screenshot({ path: testInfo.outputPath('01-before.png') })

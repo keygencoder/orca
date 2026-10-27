@@ -1,4 +1,5 @@
-const { appendFileSync } = require('node:fs')
+const { appendFileSync, existsSync, watch } = require('node:fs')
+const { dirname } = require('node:path')
 const { createInterface } = require('node:readline')
 
 const args = process.argv.slice(2)
@@ -62,12 +63,38 @@ createInterface({ input: process.stdin }).on('line', (line) => {
         notify('turn/started', { threadId, turn: { id: turnId, status: 'inProgress', items: [] } })
         const item = { type: 'agentMessage', id: `answer-${turns}`, text }
         notify('item/started', { threadId, turnId, item: { ...item, text: '' } })
-        notify('item/agentMessage/delta', { threadId, turnId, itemId: item.id, delta: text })
-        notify('item/completed', { threadId, turnId, item })
-        notify('turn/completed', {
-          threadId,
-          turn: { id: turnId, status: 'completed', items: [item] }
-        })
+        const finish = () => {
+          notify('item/completed', { threadId, turnId, item })
+          notify('turn/completed', {
+            threadId,
+            turn: { id: turnId, status: 'completed', items: [item] }
+          })
+        }
+        if (turns > 1) {
+          // 等渲染验收明确释放后再闭合尾块，避免按固定延时碰运气。
+          const release = `${process.env.ORCA_NEXT_PROMPTS_TEST_LOG}.continue`
+          const gate = watch(dirname(release), () => {
+            if (existsSync(release)) {
+              gate.close()
+              notify('item/agentMessage/delta', {
+                threadId,
+                turnId,
+                itemId: item.id,
+                delta: '\n```'
+              })
+              finish()
+            }
+          })
+          notify('item/agentMessage/delta', {
+            threadId,
+            turnId,
+            itemId: item.id,
+            delta: text.slice(0, -4)
+          })
+        } else {
+          notify('item/agentMessage/delta', { threadId, turnId, itemId: item.id, delta: text })
+          finish()
+        }
       }, 80)
       return
     }

@@ -32,6 +32,36 @@ const suggestions = (messages: readonly NativeChatMessage[]): string[] =>
   latestNativeChatNextPrompts(messages, [row], turn)
 
 describe('native chat next prompts', () => {
+  it.each([
+    '```orca-next-prompts',
+    '```orca-next-prompts\n["unfinished',
+    '~~~orca-next-prompts\n["unfinished',
+    '  ````orca-next-prompts\n["unfinished"]\n```'
+  ])('hides an open protocol block only while streaming: %s', (block) => {
+    const text = `Answer.\n\n${block}`
+    expect(parseNativeChatNextPrompts(text, { hideOpenTrailingBlock: true })).toEqual({
+      text: 'Answer.',
+      prompts: []
+    })
+    expect(parseNativeChatNextPrompts(text)).toEqual({ text, prompts: [] })
+    expect(parseNativeChatNextPrompts(text, { hideOpenTrailingBlock: false })).toEqual({
+      text,
+      prompts: []
+    })
+  })
+
+  it.each([
+    '```json\n["ordinary"]',
+    '````markdown\n```orca-next-prompts\n["nested"]',
+    '```orca-next-prompts\nnot json\n```',
+    `${reply}\nMore explanation`
+  ])('preserves ordinary, nested and closed invalid content while streaming: %s', (text) => {
+    expect(parseNativeChatNextPrompts(text, { hideOpenTrailingBlock: true })).toEqual({
+      text,
+      prompts: []
+    })
+  })
+
   it('extracts and deduplicates only a complete trailing protocol block', () => {
     expect(parseNativeChatNextPrompts(reply)).toEqual({
       text: '完成。',
